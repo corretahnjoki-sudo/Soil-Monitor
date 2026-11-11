@@ -181,7 +181,7 @@ table.data th{color:var(--muted);font-weight:700}
   </div>
   <div class="card stack">
     <div><h3>Links for patron teachers</h3>
-    <p class="hint">Send each patron the link for their school (WhatsApp, SMS or email). It opens only the report form, with their school already picked, and every report goes straight into Submissions. Anyone with these links can send reports, so share them only with your patron teachers. Patrons only see the report form, never the dashboard or submissions.</p></div>
+    <p class="hint">Send each patron the link for their school (WhatsApp, SMS or email). It opens only the report form, with their school already picked, and every report goes straight into Submissions. There is no sign-in: anyone who opens these links can send a report, and they only ever see the report form. The dashboard, submissions and setup open only on your own coordinator link.</p></div>
     <div class="stack" id="s-links" style="gap:8px"></div>
   </div>
   <div class="card stack">
@@ -313,15 +313,6 @@ table.data th{color:var(--muted);font-weight:700}
 </main>
 <div id="toast" class="toast" hidden></div>
 
-<div id="gate" hidden style="position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))">
-  <form id="gate-form" class="card stack" style="max-width:380px;width:100%">
-    <div class="brand"><div class="bricks" aria-hidden="true"><i style="background:var(--b-red)"></i><i style="background:var(--b-orange)"></i><i style="background:var(--b-yellow)"></i><i style="background:var(--b-green)"></i><i style="background:var(--b-blue)"></i><i style="background:var(--b-lime)"></i></div><h2>Soil Club Monitor</h2></div>
-    <p class="hint">Patron teachers: open the link your coordinator sent you. Coordinator: enter your access code.</p>
-    <div class="field"><label for="gate-code">Access code</label><input id="gate-code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="SOIL-XXXX-XXXX"></div>
-    <div id="gate-err" class="note warn" hidden></div>
-    <button class="btn" type="submit">Sign in</button>
-  </form>
-</div>
 <script>
 /* Vercel backend adapter: gives the page the same small API it used on claude.ai. */
 (function(){
@@ -343,18 +334,11 @@ const ready=(async()=>{
   if(join){try{await api("POST","/api/session",{code:join})}catch(e){}u.searchParams.delete("join");try{history.replaceState(null,"",u.pathname+u.search+u.hash)}catch(e){}}
   let s;
   try{s=await api("GET","/api/session");try{localStorage.setItem("scm.role",s&&s.role||"")}catch(e){}}
-  catch(e){let r=null;try{r=localStorage.getItem("scm.role")||null}catch(e2){}s={role:r,offline:true}}
-  s=s||{role:null};window.__PC=s.patronCode||"";
-  if(!s.role)showGate();
+  catch(e){let r="patron";try{r=localStorage.getItem("scm.role")||"patron"}catch(e2){}s={role:r,offline:true}}
+  s=s||{role:"patron"};window.__PC=s.patronCode||"";
   if(s.role==="admin"){const b=document.getElementById("signout");b.hidden=false;b.onclick=async()=>{try{await api("DELETE","/api/session")}catch(e){}try{localStorage.removeItem("scm.role")}catch(e){}location.href=location.pathname}}
   return s;
 })();
-function showGate(){
-  const g=document.getElementById("gate");g.hidden=false;
-  document.getElementById("gate-form").onsubmit=async e=>{e.preventDefault();const err=document.getElementById("gate-err");err.hidden=true;
-    try{await api("POST","/api/session",{code:document.getElementById("gate-code").value});location.reload()}
-    catch(x){err.hidden=false;err.textContent=x.code==="invalid_argument"?"That code is not right. Check it and try again.":"Couldn't reach the server. Check your connection."}};
-}
 const listeners=new Set();
 const poll=()=>listeners.forEach(f=>f());
 setInterval(()=>{if(document.visibilityState==="visible"&&navigator.onLine)poll()},30000);
@@ -561,7 +545,7 @@ async function sync(manual){
       await withTimeout(db.collection("reports").doc(item.id).set(rec),30000);
       outbox=outbox.filter(o=>o.id!==item.id);saveOutbox();
     }catch(e){
-      if(e&&e.code==="invalid_argument"){item.error="This phone isn't signed in. Open the link the coordinator sent you again, then tap Send now.";saveOutbox()}
+      if(e&&e.code==="invalid_argument"){item.error="The server refused this report. Tap Send now to try again, or tell the coordinator.";saveOutbox()}
       if(manual)toast("Couldn't send. Try again when the signal is better.");
       break;
     }
@@ -807,7 +791,7 @@ $("g-html").addEventListener("click",()=>downloadReport("html"));
 function renderSetup(){
   $("s-year").value=config.year;
   $("s-schools").innerHTML=config.schools.length?config.schools.map((s,i)=>`<span class="chip">${esc(s)}<button type="button" data-rm="${i}" aria-label="Remove ${esc(s)}">×</button></span>`).join(""):'<span class="hint">No schools added yet.</span>';
-  const J=window.__PC?"?join="+encodeURIComponent(window.__PC):"";const links=[["Any school",ARTIFACT_URL+J+"#patron"],...config.schools.map((s,i)=>[s,ARTIFACT_URL+J+"#patron-"+(i+1)])];
+  const J="";const links=[["Any school",ARTIFACT_URL+J+"#patron"],...config.schools.map((s,i)=>[s,ARTIFACT_URL+J+"#patron-"+(i+1)])];
   $("s-links").innerHTML=links.map(([l,u],i)=>`<div class="linkrow"><span style="font-weight:700;font-size:.9rem">${esc(l)}</span><input id="lnk-${i}" readonly value="${esc(u)}" aria-label="Link for ${esc(l)}"><button class="btn small" type="button" data-copy="lnk-${i}">Copy</button></div>`).join("")+
     (config.schools.length?'<p class="hint">School links follow the order of the schools above, so if you remove a school, send the patrons new links.</p>':"");
   $("s-principles").innerHTML=config.principles.map((p,i)=>`<div class="prow"><span class="dot" style="background:${BRICKS[p.brick]};width:20px;height:20px"></span><input id="sp-name-${i}" value="${esc(p.name)}" aria-label="Principle ${i+1} name"><select id="sp-brick-${i}" aria-label="Principle ${i+1} brick colour">${PICK_BRICKS.map(k=>`<option value="${k}" ${k===p.brick?"selected":""}>${BRICK_NAMES[k]}</option>`).join("")}</select></div>`).join("");
