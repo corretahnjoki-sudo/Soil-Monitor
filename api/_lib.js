@@ -20,7 +20,9 @@ export function cookie(req, name) {
   }
   return null;
 }
-export const roleOf = req => codeRole(cookie(req, 'scm'));
+// No sign-in page: everyone who opens the site can send reports (patron).
+// Only the coordinator's own link (?join=ADMIN_CODE) unlocks the dashboard and submissions.
+export const roleOf = req => (codeRole(cookie(req, 'scm')) === 'admin' ? 'admin' : 'patron');
 export function json(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,

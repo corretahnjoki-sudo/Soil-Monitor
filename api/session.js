@@ -6,7 +6,7 @@ export default {
   async fetch(req) {
     if (req.method === 'GET') {
       const role = roleOf(req);
-      return json({ role, patronCode: role === 'admin' ? process.env.PATRON_CODE : undefined });
+      return json({ role });
     }
     if (req.method === 'POST') {
       const { code } = await req.json().catch(() => ({}));
