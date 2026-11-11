@@ -1,0 +1,869 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#5b3a22"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 22'%3E%3Crect width='9' height='9' rx='2' fill='%23D1352B'/%3E%3Crect x='10.5' width='9' height='9' rx='2' fill='%23E8791A'/%3E%3Crect x='21' width='9' height='9' rx='2' fill='%23F2CB05'/%3E%3Crect y='12' width='9' height='9' rx='2' fill='%234C9A2A'/%3E%3Crect x='10.5' y='12' width='9' height='9' rx='2' fill='%231F6FD1'/%3E%3Crect x='21' y='12' width='9' height='9' rx='2' fill='%237EC8E3'/%3E%3C/svg%3E"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><title>Soil Club Monitor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: phone-first field app — sticky header + scrollable tabs (coordinator) or form-only (patron link); single column cards, dashboard widens on tablets/desktop */
+:root{
+  --bg:#f3efe6; --surface:#fffdf8; --sunk:#e9e2d3; --fg:#2b2118; --muted:#6f6355; --line:#d8cebd;
+  --soil:#5b3a22; --leaf:#2f6b3a; --leaf-ink:#ffffff; --warn:#b5541a; --bad:#a3312a; --good:#2f6b3a;
+  --b-red:#d7392b; --b-orange:#f08a24; --b-yellow:#f4c430; --b-green:#2e8b3d; --b-blue:#2364b8; --b-lime:#8cc63f;
+  --display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1b1612; --surface:#26201a; --sunk:#322a22; --fg:#f1e9dc; --muted:#b5a795; --line:#43392e;
+  --soil:#e0b98f; --leaf:#7cc48a; --leaf-ink:#10240f; --warn:#f0a066; --bad:#f08a80; --good:#7cc48a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1b1612; --surface:#26201a; --sunk:#322a22; --fg:#f1e9dc; --muted:#b5a795; --line:#43392e;
+  --soil:#e0b98f; --leaf:#7cc48a; --leaf-ink:#10240f; --warn:#f0a066; --bad:#f08a80; --good:#7cc48a; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--soil)}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--soil);color:var(--bg)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px 12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.bricks{display:grid;grid-template-columns:repeat(3,10px);gap:2px}
+.bricks i{width:10px;height:7px;border-radius:2px;display:block}
+.brand h1{font-family:var(--display);font-weight:800;font-size:1.25rem;margin:0;line-height:1.1;letter-spacing:-.01em}
+.brand small{display:block;font-size:.78rem;opacity:.85}
+.hdr-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sync{font-size:.8rem;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14);white-space:nowrap}
+.sync.pending{background:var(--b-yellow);color:#2b2118}
+.sync.off{background:var(--bad);color:#fff}
+.hdr-btn{font:700 .8rem var(--body);padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:transparent;color:inherit;cursor:pointer}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:4px;padding-block:8px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{flex:1 0 auto;font:700 .92rem var(--body);padding:10px 12px;border-radius:10px;border:0;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+nav.tabs button .n{font-variant-numeric:tabular-nums;font-size:.75rem;background:var(--b-yellow);color:#2b2118;border-radius:999px;padding:1px 6px;margin-left:4px}
+main .wrap{padding-block:18px 48px;display:grid;gap:16px}
+h2{font-family:var(--display);font-weight:800;font-size:1.35rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:0 0 8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.hint{color:var(--muted);font-size:.88rem;margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.field{display:grid;gap:6px;min-width:0;align-content:start}
+label,.lab{font-weight:700;font-size:.92rem}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;min-width:0}
+input[type=checkbox]{width:20px;height:20px;padding:0;accent-color:var(--leaf)}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--b-yellow);outline-offset:1px}
+textarea{min-height:76px;resize:vertical}
+.stack{display:grid;gap:14px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:700 .9rem var(--body);padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:var(--leaf-ink)}
+.stepper{display:flex;align-items:stretch;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.stepper button{width:44px;border:0;background:var(--sunk);color:var(--fg);font:700 1.2rem var(--body);cursor:pointer}
+.stepper input{border:0;border-radius:0;text-align:center;font-variant-numeric:tabular-nums;font-weight:700;background:transparent}
+details.more{border-top:1px dashed var(--line);padding-top:12px}
+details.more summary{cursor:pointer;font-weight:700;color:var(--leaf)}
+.btn{font:700 1rem var(--body);padding:13px 18px;border-radius:12px;border:0;background:var(--leaf);color:var(--leaf-ink);cursor:pointer}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--fg)}
+.btn.small{padding:8px 12px;font-size:.88rem;border-radius:10px}
+.btn.danger{background:transparent;border:1.5px solid var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--sunk);white-space:nowrap}
+.chip.ok{background:var(--leaf);color:var(--leaf-ink)}
+.chip.todo{background:var(--b-yellow);color:#2b2118}
+.dot{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+.photos{display:flex;gap:8px;flex-wrap:wrap}
+.photos img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--sunk)}
+.ph{display:grid;gap:4px;justify-items:center}
+.note{padding:12px 14px;border-radius:10px;background:var(--sunk);font-size:.92rem}
+.note.warn{border-left:4px solid var(--warn)}
+.note.good{border-left:4px solid var(--good)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:700;z-index:20;max-width:calc(100% - 32px)}
+.linkrow{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr) auto;gap:8px;align-items:center}
+.linkrow input{font-size:.82rem;padding:8px 10px}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi b{display:block;font-family:var(--display);font-weight:800;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:.82rem;color:var(--muted)}
+.dash2{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:820px){.dash2{grid-template-columns:1fr 1fr}}
+.scroll{overflow-x:auto}
+table.cov{border-collapse:separate;border-spacing:3px;font-size:.78rem}
+table.cov th{font-weight:700;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+table.cov th.sch{text-align:left;color:var(--fg);white-space:nowrap;padding-right:8px;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+table.cov td{width:24px;height:24px;min-width:24px;border-radius:5px;border:1.5px solid var(--line);text-align:center;font-weight:700}
+td.late{border:1.5px dashed var(--bad)!important;color:var(--bad)}
+td.part{background-image:linear-gradient(135deg,transparent 50%,var(--bg) 50%)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(0,9rem) 1fr 3.2rem;gap:8px;align-items:center;font-size:.85rem}
+.bar .track{height:14px;background:var(--sunk);border-radius:7px;overflow:hidden}
+.bar .fill{height:100%;border-radius:7px}
+.bar .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.bar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.months{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:150px;border-bottom:1px solid var(--line);padding-top:18px}
+.mcol{display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+.mcol .seg-b{background:var(--b-blue)}.mcol .seg-g{background:var(--b-orange);border-radius:4px 4px 0 0}
+.mcol .tot{position:absolute;left:0;right:0;text-align:center;font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums}
+.mlab{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;font-size:.75rem;color:var(--muted);text-align:center;margin-top:4px}
+table.data{width:100%;border-collapse:collapse;font-size:.85rem;font-variant-numeric:tabular-nums}
+table.data th,table.data td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.data th:first-child,table.data td:first-child{text-align:left}
+table.data th{color:var(--muted);font-weight:700}
+.feed{display:grid;gap:10px}
+.rep{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--surface);display:grid;gap:6px;min-width:0}
+.rep.editing{border-color:var(--leaf);border-width:2px}
+.rep .meta{font-size:.82rem;color:var(--muted)}
+.rep p{margin:0;font-size:.9rem}
+.rep .an{font-size:.88rem;border-left:3px solid var(--leaf);padding-left:8px}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--r)}
+/* setup */
+.actrow{display:grid;grid-template-columns:2rem minmax(0,1fr) minmax(0,9rem) 5.5rem;gap:6px;align-items:center}
+.actrow b{font-variant-numeric:tabular-nums;text-align:center}
+.prow{display:grid;grid-template-columns:1.6rem minmax(0,1fr) 8rem;gap:8px;align-items:center}
+.schools{display:flex;flex-wrap:wrap;gap:6px}
+.schools .chip button{border:0;background:none;color:var(--muted);cursor:pointer;font:700 1rem var(--body);padding:0 0 0 2px}
+/* report paper: deliberately a white printed page in both themes */
+.paper-wrap{overflow-x:auto;background:var(--sunk);border-radius:var(--r);padding:14px}
+@media (max-width:520px){
+  .actrow{grid-template-columns:1.6rem minmax(0,1fr)}
+  .actrow select{grid-column:2}
+  .bar{grid-template-columns:minmax(0,6.5rem) 1fr 2.8rem}
+  .linkrow{grid-template-columns:minmax(0,1fr) auto}
+  .linkrow span{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:no-preference){.bar .fill{transition:width .4s ease}}
+</style>
+<style id="report-css">
+.doc{background:#ffffff;color:#222222;font-family:Arial,Helvetica,sans-serif;padding:28px;max-width:860px;margin:0 auto;line-height:1.45;font-size:14px;border-radius:6px}
+.doc h1{font-size:22px;margin:0 0 4px;color:#5b3a22}
+.doc h2{font-size:16px;margin:24px 0 8px;color:#5b3a22;border-bottom:2px solid #e9e2d3;padding-bottom:4px}
+.doc p{margin:6px 0}
+.doc table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.doc th,.doc td{border:1px solid #d8cebd;padding:5px 7px;text-align:left;vertical-align:top}
+.doc th{background:#f3efe6;font-weight:bold}
+.doc td.n{text-align:right;white-space:nowrap}
+.doc .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.doc .muted{color:#6f6355;font-size:12.5px}
+.doc ul{margin:4px 0 4px 20px;padding:0}
+.doc li{margin:3px 0}
+.doc .kv td{font-size:13px}
+.doc .kv td.big{font-size:18px;font-weight:bold;color:#2f6b3a;text-align:right;width:90px}
+</style>
+
+</head><body>
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <div class="bricks" aria-hidden="true"><i style="background:var(--b-red)"></i><i style="background:var(--b-orange)"></i><i style="background:var(--b-yellow)"></i><i style="background:var(--b-green)"></i><i style="background:var(--b-blue)"></i><i style="background:var(--b-lime)"></i></div>
+    <div><h1>Soil Club Monitor</h1><small id="subtitle">Regeneration Station · Regenerative Agriculture Club</small></div>
+  </div>
+  <div class="hdr-r"><button class="hdr-btn" id="to-admin" type="button" hidden>Coordinator view</button><button class="hdr-btn" id="signout" type="button" hidden>Sign out</button><span id="sync" class="sync">Connecting…</span></div>
+</div></header>
+
+<nav class="tabs" id="nav" aria-label="Sections" hidden><div class="wrap" role="tablist">
+  <button role="tab" aria-selected="true" data-view="setup">1. Setup</button>
+  <button role="tab" aria-selected="false" data-view="dashboard">2. Dashboard</button>
+  <button role="tab" aria-selected="false" data-view="form">3. Report form</button>
+  <button role="tab" aria-selected="false" data-view="submissions">Submissions<span class="n" id="n-review" hidden></span></button>
+  <button role="tab" aria-selected="false" data-view="summary">Programme report</button>
+</div></nav>
+
+<main>
+<!-- SETUP -->
+<section id="view-setup" hidden><div class="wrap">
+  <div><h2>Programme setup</h2><p class="hint">Set the schools, your six principles and the 20 activities once. Patron teachers see these in their report form.</p></div>
+  <div class="card stack">
+    <div class="field" style="max-width:200px"><label for="s-year">Programme year</label><input id="s-year" type="number" inputmode="numeric" min="2024" max="2040"></div>
+    <div class="field"><span class="lab">Schools</span>
+      <div class="schools" id="s-schools"></div>
+      <div class="row"><input id="s-newschool" placeholder="School name" style="flex:1;min-width:0"><button class="btn small" type="button" id="s-add">Add school</button></div></div>
+  </div>
+  <div class="card stack">
+    <div><h3>Links for patron teachers</h3>
+    <p class="hint">Send each patron the link for their school (WhatsApp, SMS or email). It opens only the report form, with their school already picked, and every report goes straight into Submissions. Anyone with these links can send reports, so share them only with your patron teachers. Patrons only see the report form, never the dashboard or submissions.</p></div>
+    <div class="stack" id="s-links" style="gap:8px"></div>
+  </div>
+  <div class="card stack">
+    <h3>Six soil health principles</h3>
+    <div class="stack" id="s-principles" style="gap:8px"></div>
+  </div>
+  <div class="card stack">
+    <h3>20 activities, January to July</h3>
+    <div class="stack" id="s-acts" style="gap:8px"></div>
+  </div>
+  <div class="row"><button class="btn" id="s-save" type="button">Save setup</button><span class="hint" id="s-msg"></span></div>
+</div></section>
+
+<!-- DASHBOARD -->
+<section id="view-dashboard" hidden><div class="wrap">
+  <div class="row" style="justify-content:space-between">
+    <h2>Club dashboard</h2>
+    <div class="row">
+      <select id="d-school" aria-label="Filter by school" style="width:auto"></select>
+      <button class="btn small" id="d-gen" type="button">Generate programme report</button>
+    </div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <h3>Activity coverage</h3>
+    <p class="hint">Each square is one of the 20 activities, coloured by its soil health principle. A dashed red square is overdue: its month has passed with no report.</p>
+    <div class="scroll" style="margin-top:10px"><table class="cov" id="cov"></table></div>
+    <div class="legend" id="cov-legend"></div>
+  </div>
+  <div class="dash2">
+    <div class="card"><h3>Understanding by principle</h3><p class="hint">Share of learners present who could explain the principle.</p><div class="bars" id="by-principle" style="margin-top:12px"></div></div>
+    <div class="card"><h3>Attendance by month</h3><p class="hint"><span class="dot" style="background:var(--b-blue)"></span> Boys &nbsp; <span class="dot" style="background:var(--b-orange)"></span> Girls</p><div class="months" id="months"></div><div class="mlab"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span></div></div>
+  </div>
+  <div class="card"><h3>Soil &amp; garden indicators</h3><p class="hint">First measurement → latest, per school.</p><div class="scroll" style="margin-top:10px"><table class="data" id="field"></table></div></div>
+  <div class="card"><h3>Activity results</h3><p class="hint">The booklet measurements recorded for each activity. Latest value per school.</p><div class="scroll" style="margin-top:10px"><table class="data" id="results"></table></div></div>
+  <div class="card"><h3>Challenges raised</h3><div class="feed" id="chals"></div></div>
+</div></section>
+
+<!-- REPORT FORM -->
+<section id="view-form"><div class="wrap">
+  <div>
+    <h2>Activity report</h2>
+    <p class="hint">Fill this in right after each club session. It saves on your phone first and sends when you have data.</p>
+  </div>
+  <div id="outbox"></div>
+  <form id="rform" class="card stack" novalidate>
+    <div class="grid2">
+      <div class="field"><label for="f-school">School</label><select id="f-school" required></select></div>
+      <div class="field"><label for="f-teacher">Patron teacher</label><input id="f-teacher" autocomplete="name" placeholder="Your name" required></div>
+    </div>
+    <div class="field"><label for="f-activity">Activity</label><select id="f-activity" required></select>
+      <div id="act-chip" class="row"></div></div>
+    <div id="act-info" class="stack" style="gap:10px" hidden></div>
+    <div class="grid2">
+      <div class="field"><label for="f-date">Date</label><input id="f-date" type="date" required></div>
+      <div class="field"><span class="lab">Did it happen?</span>
+        <div class="seg" id="f-status"><button type="button" data-v="done" aria-pressed="true">Done</button><button type="button" data-v="partly" aria-pressed="false">Partly</button><button type="button" data-v="postponed" aria-pressed="false">Postponed</button></div></div>
+    </div>
+    <div>
+      <span class="lab">Attendance</span>
+      <div class="grid2" style="margin-top:6px">
+        <div class="field"><label for="f-boys" style="font-weight:400">Boys</label><div class="stepper"><button type="button" data-step="f-boys:-1" aria-label="Fewer boys">−</button><input id="f-boys" type="number" inputmode="numeric" min="0" value="0"><button type="button" data-step="f-boys:1" aria-label="More boys">+</button></div></div>
+        <div class="field"><label for="f-girls" style="font-weight:400">Girls</label><div class="stepper"><button type="button" data-step="f-girls:-1" aria-label="Fewer girls">−</button><input id="f-girls" type="number" inputmode="numeric" min="0" value="0"><button type="button" data-step="f-girls:1" aria-label="More girls">+</button></div></div>
+      </div>
+    </div>
+    <div class="stack" style="gap:8px">
+      <span class="lab">Learning check</span>
+      <div class="field"><label for="f-understood" style="font-weight:400">How many learners could answer today's review questions in their own words?</label>
+        <div class="stepper" style="max-width:220px"><button type="button" data-step="f-understood:-1" aria-label="Fewer">−</button><input id="f-understood" type="number" inputmode="numeric" min="0" value="0"><button type="button" data-step="f-understood:1" aria-label="More">+</button></div></div>
+      <div class="field"><span style="font-size:.92rem">How engaged were learners? (1 = low, 5 = very high)</span>
+        <div class="seg" id="f-engage"><button type="button" data-v="1" aria-pressed="false">1</button><button type="button" data-v="2" aria-pressed="false">2</button><button type="button" data-v="3" aria-pressed="false">3</button><button type="button" data-v="4" aria-pressed="false">4</button><button type="button" data-v="5" aria-pressed="false">5</button></div></div>
+    </div>
+    <details class="more">
+      <summary>Garden &amp; soil measurements (fill what you measured today)</summary>
+      <div class="grid2" style="margin-top:12px">
+        <div class="field"><label for="f-cover">Soil cover %</label><input id="f-cover" type="number" inputmode="numeric" min="0" max="100" placeholder="0–100"></div>
+        <div class="field"><label for="f-worms">Earthworms in 1 spade</label><input id="f-worms" type="number" inputmode="numeric" min="0" placeholder="count"></div>
+        <div class="field"><label for="f-compost">Compost made (kg)</label><input id="f-compost" type="number" inputmode="decimal" min="0" step="0.5" placeholder="kg"></div>
+        <div class="field"><label for="f-infil">Water soak-in time (sec)</label><input id="f-infil" type="number" inputmode="numeric" min="0" placeholder="seconds"></div>
+        <div class="field"><label for="f-planted">Seedlings planted</label><input id="f-planted" type="number" inputmode="numeric" min="0" placeholder="total so far"></div>
+        <div class="field"><label for="f-alive">Seedlings alive</label><input id="f-alive" type="number" inputmode="numeric" min="0" placeholder="alive today"></div>
+      </div>
+      <p class="hint" style="margin-top:8px">Soak-in time (Activity 8 method): push a 15 cm ring or tin (open both ends) a few cm into the soil, pour in 500 ml of water, and time how long until it disappears.</p>
+    </details>
+    <div class="field">
+      <label for="f-photos">Photos (up to 3)</label>
+      <input id="f-photos" type="file" accept="image/*" multiple>
+      <div class="photos" id="photo-prev"></div>
+      <p class="hint">Photos are shrunk on your phone before sending, to save data.</p>
+    </div>
+    <div class="field"><label for="f-well">What went well?</label><textarea id="f-well" placeholder="e.g. Learners built the six-brick soil profile quickly"></textarea></div>
+    <div class="field"><label for="f-chal">Challenges or support needed</label><textarea id="f-chal" placeholder="e.g. No water in the garden this week"></textarea></div>
+    <div id="ferr" class="note warn" hidden></div>
+    <button class="btn" type="submit">Save report</button>
+  </form>
+  <div class="stack" id="mine-wrap" hidden><h3>Your sent reports</h3><div class="feed" id="mine"></div></div>
+</div></section>
+
+<!-- SUBMISSIONS (back end) -->
+<section id="view-submissions" hidden><div class="wrap">
+  <div><h2>Submissions</h2><p class="hint">Every report sent by patron teachers. Open one to correct figures, add a note for the patron, mark it reviewed, or delete it.</p></div>
+  <div class="card"><h3>Patron teachers</h3><div class="scroll"><table class="data" id="patrons"></table></div></div>
+  <div class="card grid3">
+    <div class="field"><label for="x-school">School</label><select id="x-school"></select></div>
+    <div class="field"><label for="x-patron">Patron</label><select id="x-patron"></select></div>
+    <div class="field"><label for="x-activity">Activity</label><select id="x-activity"></select></div>
+    <div class="field"><label for="x-review">Review status</label><select id="x-review"><option value="">All</option><option value="todo">Needs review</option><option value="ok">Reviewed</option></select></div>
+  </div>
+  <div class="row" style="justify-content:space-between"><span class="hint" id="x-count"></span><button class="btn small ghost" id="csv" type="button" hidden>Download CSV</button></div>
+  <div class="feed" id="subs"></div>
+</div></section>
+
+<!-- PROGRAMME REPORT -->
+<section id="view-summary" hidden><div class="wrap">
+  <div><h2>Programme report</h2><p class="hint">A report covering all schools, built from the submissions. Choose the period, add your own notes, then download it to share with your team, head teachers or funders.</p></div>
+  <div class="card stack">
+    <div class="grid3">
+      <div class="field"><label for="g-from">From</label><select id="g-from"></select></div>
+      <div class="field"><label for="g-to">To</label><select id="g-to"></select></div>
+      <div class="field"><span class="lab">Data</span><label class="row" style="font-weight:400;gap:8px;flex-wrap:nowrap"><input type="checkbox" id="g-reviewed" style="flex:none"> Only reviewed reports</label></div>
+    </div>
+    <div class="field"><label for="g-notes">Coordinator's notes and recommendations (appear at the end of the report)</label><textarea id="g-notes" placeholder="e.g. Next term we will run a joint field day for all five clubs…"></textarea>
+      <div class="row"><button class="btn small ghost" id="g-savenotes" type="button">Save notes</button><span class="hint" id="g-msg"></span></div></div>
+    <div class="row"><button class="btn" id="g-word" type="button" hidden>Download Word file</button><button class="btn ghost" id="g-html" type="button" hidden>Download web page</button></div>
+    <p class="hint" id="g-dlhint" hidden>Open the web page version in a browser and use Print to save it as a PDF.</p>
+  </div>
+  <div class="paper-wrap"><div class="doc" id="doc"></div></div>
+</div></section>
+</main>
+<div id="toast" class="toast" hidden></div>
+
+<div id="gate" hidden style="position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))">
+  <form id="gate-form" class="card stack" style="max-width:380px;width:100%">
+    <div class="brand"><div class="bricks" aria-hidden="true"><i style="background:var(--b-red)"></i><i style="background:var(--b-orange)"></i><i style="background:var(--b-yellow)"></i><i style="background:var(--b-green)"></i><i style="background:var(--b-blue)"></i><i style="background:var(--b-lime)"></i></div><h2>Soil Club Monitor</h2></div>
+    <p class="hint">Patron teachers: open the link your coordinator sent you. Coordinator: enter your access code.</p>
+    <div class="field"><label for="gate-code">Access code</label><input id="gate-code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="SOIL-XXXX-XXXX"></div>
+    <div id="gate-err" class="note warn" hidden></div>
+    <button class="btn" type="submit">Sign in</button>
+  </form>
+</div>
+<script>
+/* Vercel backend adapter: gives the page the same small API it used on claude.ai. */
+(function(){
+"use strict";
+let dev;try{dev=localStorage.getItem("scm.device");if(!dev){dev="d"+(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^a-z0-9]/gi,"").toLowerCase();localStorage.setItem("scm.device",dev)}}catch(e){dev="d"+String(Math.random()).slice(2)}
+async function api(method,url,body,raw){
+  const h={"x-device":dev};let b;
+  if(raw){b=body;h["content-type"]=body.type||"image/jpeg"}else if(body!==undefined){b=JSON.stringify(body);h["content-type"]="application/json"}
+  let r;try{r=await fetch(url,{method,headers:h,body:b,credentials:"same-origin",cache:"no-store"})}catch(e){throw{code:"unavailable",message:"No connection"}}
+  if(r.status===401||r.status===403)throw{code:"invalid_argument",message:"Not allowed"};
+  if(r.status===404&&method==="GET")return null;
+  if(r.status===413)throw{code:"too_large",message:"Too large"};
+  if(r.status===415)throw{code:"unsupported_type",message:"Unsupported"};
+  if(!r.ok)throw{code:"unavailable",message:"Server error "+r.status};
+  return r.json();
+}
+const ready=(async()=>{
+  const u=new URL(location.href),join=u.searchParams.get("join");
+  if(join){try{await api("POST","/api/session",{code:join})}catch(e){}u.searchParams.delete("join");try{history.replaceState(null,"",u.pathname+u.search+u.hash)}catch(e){}}
+  let s;
+  try{s=await api("GET","/api/session");try{localStorage.setItem("scm.role",s&&s.role||"")}catch(e){}}
+  catch(e){let r=null;try{r=localStorage.getItem("scm.role")||null}catch(e2){}s={role:r,offline:true}}
+  s=s||{role:null};window.__PC=s.patronCode||"";
+  if(!s.role)showGate();
+  if(s.role==="admin"){const b=document.getElementById("signout");b.hidden=false;b.onclick=async()=>{try{await api("DELETE","/api/session")}catch(e){}try{localStorage.removeItem("scm.role")}catch(e){}location.href=location.pathname}}
+  return s;
+})();
+function showGate(){
+  const g=document.getElementById("gate");g.hidden=false;
+  document.getElementById("gate-form").onsubmit=async e=>{e.preventDefault();const err=document.getElementById("gate-err");err.hidden=true;
+    try{await api("POST","/api/session",{code:document.getElementById("gate-code").value});location.reload()}
+    catch(x){err.hidden=false;err.textContent=x.code==="invalid_argument"?"That code is not right. Check it and try again.":"Couldn't reach the server. Check your connection."}};
+}
+const listeners=new Set();
+const poll=()=>listeners.forEach(f=>f());
+setInterval(()=>{if(document.visibilityState==="visible"&&navigator.onLine)poll()},30000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")poll()});
+const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d||undefined,metadata:{fromCache:false,hasPendingWrites:false}});
+function watch(load,emit){let last;const run=async()=>{try{const d=await load();const k=JSON.stringify(d);if(k!==last){last=k;emit(d)}}catch(e){}};listeners.add(run);run();return()=>listeners.delete(run)}
+function docRef(path){
+  const [col,id]=path.split("/");
+  if(col==="config"){const url="/api/doc?name="+(id==="main"?"main":"notes");
+    return{id,path,get:async()=>snapDoc(id,await api("GET",url)),set:async d=>{await api("PUT",url,d);poll()},
+      onSnapshot:(next)=>watch(()=>api("GET",url),d=>next(snapDoc(id,d)))}}
+  const q="/api/reports?id="+encodeURIComponent(id);
+  return{id,path,set:async d=>{await api("POST","/api/reports",d);poll()},update:async d=>{await api("PATCH",q,d);poll()},delete:async()=>{await api("DELETE",q);poll()}};
+}
+const db={doc:docRef,collection:c=>({path:c,doc:id=>docRef(c+"/"+id),
+  onSnapshot:(next)=>watch(async()=>(await api("GET","/api/reports"))||[],l=>next({docs:l.map(r=>snapDoc(r.id,r)),size:l.length,empty:!l.length,docChanges:()=>[]}))})};
+const downloads={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]);const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);return{saved:true}}};
+window.claude={use:async name=>{
+  const s=await ready;
+  if(name==="downloads")return downloads;
+  if(!s.role)return null;
+  if(name==="db")return db;
+  if(name==="user")return{isOwner:async()=>s.role==="admin",canEdit:async()=>s.role==="admin",can:async()=>true,id:async()=>dev};
+  if(name==="assets")return{upload:async blob=>{const r=await api("POST","/api/photo",blob,true);return{id:r.id,url:"/api/photo?p="+encodeURIComponent(r.id)}}};
+  return null;
+}};
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const ARTIFACT_URL=location.origin+"/";
+const BRICKS={yellow:"#F2CB05",orange:"#E8791A",green:"#4C9A2A",blue:"#1F6FD1",lightblue:"#7EC8E3",red:"#D1352B",lime:"#8cc63f",multi:"linear-gradient(90deg,#F2CB05 0 17%,#E8791A 17% 33%,#4C9A2A 33% 50%,#1F6FD1 50% 67%,#7EC8E3 67% 83%,#D1352B 83%)"};
+const BRICK_NAMES={yellow:"Yellow",orange:"Orange",green:"Green",blue:"Blue",lightblue:"Light blue",red:"Red",lime:"Light green",multi:"Multi-colour"};
+const PICK_BRICKS=["yellow","orange","green","blue","lightblue","red"];
+const SYNTH={name:"All six principles (synthesis)",brick:"multi"};
+const edgeCol=c=>c&&c.startsWith("linear")?"#777":c;
+const BOOKLET={"principles": [{"name": "Know Your Context", "brick": "yellow"}, {"name": "Minimize Disturbance", "brick": "orange"}, {"name": "Keep Soil Covered (Armor)", "brick": "green"}, {"name": "Maximize Diversity", "brick": "blue"}, {"name": "Maintain Living Roots", "brick": "lightblue"}, {"name": "Integrate Animals", "brick": "red"}], "activities": [{"title": "Understanding Soil as a Living System", "principle": 0, "month": 1, "safety": false, "questions": ["Name three living organisms you found in your soil sample.", "Explain, in your own words, why soil biology matters to a farmer."], "measures": [{"k": "org", "label": "Organisms counted in 5 minutes", "unit": "count"}]}, {"title": "Soil Observation and Soil Profile Study", "principle": 0, "month": 1, "safety": false, "questions": ["Which horizon was darkest, and why do you think that is?", "How might a shallow topsoil horizon affect a farmer's crop choices?"], "measures": [{"k": "topsoil", "label": "Topsoil (A horizon) depth", "unit": "cm"}, {"k": "pitdepth", "label": "Profile pit depth", "unit": "cm"}]}, {"title": "Comparing Healthy and Degraded Soil", "principle": 0, "month": 1, "safety": false, "questions": ["Which site showed better structure, and what evidence supports this?", "Suggest one regenerative practice that could improve the degraded site over time."], "measures": [{"k": "orgH", "label": "Organisms in 5 min: healthy site", "unit": "count"}, {"k": "orgD", "label": "Organisms in 5 min: degraded site", "unit": "count"}, {"k": "absH", "label": "Time to absorb 1 cup: healthy site", "unit": "sec"}, {"k": "absD", "label": "Time to absorb 1 cup: degraded site", "unit": "sec"}]}, {"title": "Soil Organic Matter Investigation", "principle": 0, "month": 2, "safety": true, "questions": ["Which site had the highest estimated organic matter, and what site conditions might explain this?", "Name two regenerative practices from this booklet that build soil organic matter over time."], "measures": [{"k": "omHigh", "label": "Organic matter: highest site", "unit": "%"}, {"k": "omLow", "label": "Organic matter: lowest site", "unit": "%"}]}, {"title": "Compost Making", "principle": 2, "month": 2, "safety": false, "questions": ["What is the role of \"greens\" versus \"browns\" in a compost heap?", "Describe two signs that a compost heap is unhealthy, and how to fix each."], "measures": [{"k": "heapH", "label": "Heap height reached", "unit": "cm"}, {"k": "heaps", "label": "Compost heaps built", "unit": "count"}]}, {"title": "Vermicomposting", "principle": 2, "month": 2, "safety": false, "questions": ["Why are worm castings considered more concentrated than ordinary compost?", "List two foods that should never go into a worm bin."], "measures": [{"k": "bins", "label": "Worm bins set up", "unit": "count"}, {"k": "castings", "label": "Castings harvested", "unit": "kg"}]}, {"title": "Mulching and Soil Cover", "principle": 2, "month": 3, "safety": false, "questions": ["What differences did you observe in weed growth between the two beds?", "Explain how mulch reduces water loss from soil, using what you observed."], "measures": [{"k": "weedsM", "label": "Weeds after 4 weeks: mulched bed", "unit": "count"}, {"k": "weedsB", "label": "Weeds after 4 weeks: bare bed", "unit": "count"}]}, {"title": "Water Infiltration Investigation", "principle": 4, "month": 3, "safety": false, "questions": ["Which site had the fastest infiltration rate, and what might explain this?", "How could slow infiltration on a farm plot lead to problems during heavy rain?"], "measures": [{"k": "infM", "label": "500 ml soak-in: mulched bed", "unit": "sec"}, {"k": "infB", "label": "500 ml soak-in: bare path", "unit": "sec"}, {"k": "infG", "label": "500 ml soak-in: grassed area", "unit": "sec"}]}, {"title": "Soil Erosion Demonstration", "principle": 2, "month": 3, "safety": true, "questions": ["Which tray produced the most runoff and sediment? Why?", "What would you recommend to a farmer with a sloped, bare field, based on this demonstration?"], "measures": [{"k": "runB", "label": "Runoff: bare tray", "unit": "ml"}, {"k": "runM", "label": "Runoff: mulched tray", "unit": "ml"}, {"k": "runG", "label": "Runoff: grass tray", "unit": "ml"}]}, {"title": "Crop Diversity and Intercropping", "principle": 3, "month": 4, "safety": false, "questions": ["What advantage did the intercropped bed show over the monoculture bed, if any?", "Why do legumes make good intercropping partners?"], "measures": [{"k": "pestI", "label": "Pest-damaged plants: intercropped bed", "unit": "%"}, {"k": "pestM", "label": "Pest-damaged plants: monoculture bed", "unit": "%"}]}, {"title": "Cover Crops and Green Manures", "principle": 4, "month": 4, "safety": false, "questions": ["What is the difference between a cover crop and a green manure?", "Why are legumes especially valuable as green manures?"], "measures": [{"k": "cover6", "label": "Ground covered by cover crop at 6–8 weeks", "unit": "%"}]}, {"title": "Agroforestry and Trees on the Farm", "principle": 3, "month": 5, "safety": false, "questions": ["Name two benefits agroforestry trees provide besides shade.", "Why is nitrogen fixation by certain tree species valuable to nearby crops?"], "measures": [{"k": "trees", "label": "Tree seedlings planted", "unit": "count"}, {"k": "treesAlive", "label": "Tree seedlings alive", "unit": "count"}]}, {"title": "Integrated Crop–Livestock Systems", "principle": 5, "month": 5, "safety": false, "questions": ["Why does rotational grazing help pasture recover compared to continuous grazing?", "How does an integrated crop-livestock system reduce the need for external fertilizer?"], "measures": [{"k": "htMan", "label": "Plant height: manured section", "unit": "cm"}, {"k": "htNo", "label": "Plant height: unmanured section", "unit": "cm"}]}, {"title": "Biodiversity on the Farm", "principle": 3, "month": 5, "safety": false, "questions": ["Which area had greater biodiversity, and what features might explain this?", "Name one way increased biodiversity could reduce a farmer's need for pesticides."], "measures": [{"k": "spD", "label": "Species counted: diverse area", "unit": "count"}, {"k": "spM", "label": "Species counted: monoculture or bare area", "unit": "count"}]}, {"title": "Biological Pest Management", "principle": 3, "month": 6, "safety": true, "questions": ["Why can synthetic pesticides work against the goals of regenerative agriculture?", "Describe how a trap crop like marigold can protect a main crop."], "measures": [{"k": "pNeem", "label": "Pests counted: neem-treated bed", "unit": "count"}, {"k": "pComp", "label": "Pests counted: companion-plant bed", "unit": "count"}, {"k": "pCtrl", "label": "Pests counted: untreated bed", "unit": "count"}]}, {"title": "Preparing a Compost Tea or Microbial Extract", "principle": 2, "month": 6, "safety": true, "questions": ["Why should compost tea be applied on the same day it is made?", "How is compost tea different from simply applying solid compost to soil?"], "measures": [{"k": "tea", "label": "Diluted compost tea applied", "unit": "litres"}]}, {"title": "Biochar Investigation", "principle": 2, "month": 6, "safety": true, "questions": ["Why must biochar be \"charged\" before adding it to soil?", "How is making biochar different from simply burning crop residue to ash?"], "measures": [{"k": "biochar", "label": "Charged biochar made", "unit": "kg"}, {"k": "htBio", "label": "Plant height: biochar bed", "unit": "cm"}, {"k": "htCtl", "label": "Plant height: untreated bed", "unit": "cm"}]}, {"title": "Designing a Regenerative Farm", "principle": 6, "month": 7, "safety": false, "questions": ["Which two practices in your design work together most closely, and how?", "What was the hardest design decision, and why?"], "measures": [{"k": "designs", "label": "Farm designs presented", "unit": "count"}, {"k": "practices", "label": "Most practices used in one design (target 5+)", "unit": "count"}]}, {"title": "Regenerative Agriculture Farm Audit", "principle": 6, "month": 7, "safety": false, "questions": ["Which principle scored lowest, and what evidence supports that score?", "What is one low-cost action that could raise that score within a term?"], "measures": [{"k": "a1", "label": "Audit: context appropriateness", "unit": "1–5"}, {"k": "a2", "label": "Audit: minimized disturbance", "unit": "1–5"}, {"k": "a3", "label": "Audit: soil cover / armor", "unit": "1–5"}, {"k": "a4", "label": "Audit: diversity", "unit": "1–5"}, {"k": "a5", "label": "Audit: living roots", "unit": "1–5"}, {"k": "a6", "label": "Audit: animal integration", "unit": "1–5"}]}, {"title": "School Regenerative Agriculture Demonstration", "principle": 6, "month": 7, "safety": false, "questions": ["What was the most common question visitors asked at your station?", "What is one thing you would change about the demonstration next time?"], "measures": [{"k": "visitors", "label": "Visitors at the open day", "unit": "count"}, {"k": "stations", "label": "Stations run", "unit": "count"}]}]};
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul"];
+const MONTHS_L=["January","February","March","April","May","June","July"];
+const VIEWS=["setup","dashboard","form","submissions","summary"];
+const DEFAULT_CONFIG={
+  year:2027, schools:["Sweetwaters Girls Secondary School", "Malek Girls Secondary School", "Withare Secondary School", "Wathituga Secondary School", "Lechugu Secondary School"],
+  principles:BOOKLET.principles,
+  activities:BOOKLET.activities
+};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{if(v===""||v==null)return null;const n=parseFloat(v);return Number.isFinite(n)?n:null};
+const pct=(a,b)=>b?Math.round(a/b*100):null;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+
+let config=structuredClone(DEFAULT_CONFIG), reports=[], db=null, assets=null, user=null, downloads=null, isOwner=false, myId=null;
+let mode="patron", current="form", editingId=null, reportNotes={text:""};
+let outbox=store.get("scm.outbox",[]), syncing=false, pendingPhotos=[];
+
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,3200)}
+const actOf=n=>config.activities[n-1]||{title:"Activity "+n,principle:-1,month:0};
+const prOf=n=>actOf(n).principle===6?SYNTH:(config.principles[actOf(n).principle]||{name:"",brick:""});
+const monthOfDate=d=>{const x=new Date(String(d)+"T12:00");return isNaN(x)?0:x.getMonth()+1};
+const isOverdue=a=>new Date()>new Date(+config.year||2027,a.month,0,23,59);
+
+/* ---------- views & modes ---------- */
+function show(view){
+  if(mode==="patron")view="form";
+  current=view;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===view)));
+  VIEWS.forEach(v=>$("view-"+v).hidden=v!==view);
+  renderCurrent();
+}
+function renderCurrent(){
+  if(current==="dashboard")renderDash();
+  if(current==="submissions")renderSubs();
+  if(current==="summary")renderSummary();
+  if(current==="form")renderMine();
+}
+function go(view){show(view);try{history.replaceState(null,"","#"+view)}catch(e){}window.scrollTo({top:0})}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
+function hashSchool(){const m=location.hash.match(/^#patron-(\d+)$/);return m?config.schools[+m[1]-1]||"":""}
+function applyMode(){
+  const h=location.hash.slice(1);
+  const patronLink=h==="patron"||/^patron-\d+$/.test(h);
+  mode=(isOwner&&!patronLink)?"admin":"patron";
+  $("nav").hidden=mode!=="admin";
+  $("to-admin").hidden=!(isOwner&&mode==="patron");
+  $("subtitle").textContent=mode==="admin"?"Regeneration Station · Coordinator view":"Regeneration Station · Patron report form";
+  const hs=hashSchool();if(hs){$("f-school").value=hs}
+  if(mode==="admin")show(VIEWS.includes(h)?h:(config.schools.length?"dashboard":"setup"));else show("form");
+}
+window.addEventListener("hashchange",applyMode);
+$("to-admin").addEventListener("click",()=>{try{history.replaceState(null,"","#dashboard")}catch(e){}applyMode()});
+
+/* ---------- report form ---------- */
+function fillOptions(){
+  const sSel=$("f-school"),cur=sSel.value||hashSchool()||store.get("scm.school","");
+  sSel.innerHTML=config.schools.length?'<option value="">Choose school…</option>'+config.schools.map(s=>`<option ${s===cur?"selected":""}>${esc(s)}</option>`).join(""):'<option value="">No schools set up yet</option>';
+  const aSel=$("f-activity"),ac=aSel.value;
+  aSel.innerHTML='<option value="">Choose activity…</option>'+config.activities.map((a,i)=>`<option value="${i+1}" ${String(i+1)===ac?"selected":""}>${i+1}. ${esc(a.title)} (${MONTHS[a.month-1]||""})</option>`).join("");
+  actChip();
+  const opt=(id,first,vals)=>{const el=$(id),v=el.value;el.innerHTML=`<option value="">${first}</option>`+vals.map(([val,l])=>`<option value="${esc(val)}" ${String(val)===v?"selected":""}>${esc(l)}</option>`).join("")};
+  opt("d-school","All schools",config.schools.map(s=>[s,s]));
+  opt("x-school","All schools",config.schools.map(s=>[s,s]));
+  opt("x-activity","All activities",config.activities.map((a,i)=>[i+1,(i+1)+". "+a.title]));
+  const mo=(id,def)=>{const el=$(id),v=el.value||def;el.innerHTML=MONTHS_L.map((m,i)=>`<option value="${i+1}" ${String(i+1)===String(v)?"selected":""}>${m}</option>`).join("")};
+  mo("g-from","1");mo("g-to","7");
+}
+function actChip(){
+  const v=+$("f-activity").value;const p=v?prOf(v):null;
+  $("act-chip").innerHTML=p&&p.brick?`<span class="chip"><span class="dot" style="background:${BRICKS[p.brick]}"></span>${esc(BRICK_NAMES[p.brick])} · ${esc(p.name)}</span>`:"";
+  const a=v?actOf(v):null,info=$("act-info");
+  if(!a){info.hidden=true;info.innerHTML="";return}
+  info.hidden=false;
+  info.innerHTML=(a.safety?`<div class="note warn"><b>Safety:</b> the booklet says this activity must be supervised by the patron teacher.</div>`:"")+
+   ((a.questions||[]).length?`<div class="note"><b>Ask learners (booklet review questions):</b><ol style="margin:6px 0 0 18px;padding:0">${a.questions.map(q=>`<li>${esc(q)}</li>`).join("")}</ol></div>`:"")+
+   ((a.measures||[]).length?`<div class="stack" style="gap:8px"><span class="lab">This activity's results</span><div class="grid2">${a.measures.map(m=>`<div class="field"><label for="m-${m.k}" style="font-weight:400">${esc(m.label)} (${esc(m.unit)})</label><input id="m-${m.k}" type="number" inputmode="decimal" min="0" step="any"></div>`).join("")}</div></div>`:"");
+}
+function readMeasures(prefix,a){const o={};(a.measures||[]).forEach(m=>{const el=$(prefix+m.k);if(el){const v=num(el.value);if(v!=null)o[m.k]=v}});return o}
+function measText(r){const a=actOf(r.activity);return (a.measures||[]).filter(m=>r.m&&r.m[m.k]!=null).map(m=>`${m.label}: ${r.m[m.k]} ${m.unit}`).join(" · ")}
+$("f-activity").addEventListener("change",actChip);
+$("f-teacher").value=store.get("scm.teacher","");
+$("f-date").value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+function segWire(id){$(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$(id).querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))})}
+segWire("f-status");segWire("f-engage");
+const segVal=id=>{const b=$(id).querySelector('[aria-pressed="true"]');return b?b.dataset.v:null};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-step]");if(!b)return;const[id,d]=b.dataset.step.split(":");const i=$(id);i.value=Math.max(0,(parseInt(i.value)||0)+(+d))});
+
+async function compress(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url});
+    const max=1280,sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL("image/jpeg",0.7);
+  }finally{URL.revokeObjectURL(url)}
+}
+$("f-photos").addEventListener("change",async e=>{
+  const files=[...e.target.files].slice(0,3);pendingPhotos=[];
+  $("photo-prev").innerHTML='<span class="hint">Preparing photos…</span>';
+  for(const f of files){try{pendingPhotos.push(await compress(f))}catch(err){}}
+  $("photo-prev").innerHTML=pendingPhotos.map(p=>`<img src="${p}" alt="Selected photo">`).join("");
+  if(e.target.files.length>3)toast("Only the first 3 photos are kept");
+});
+$("rform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const school=$("f-school").value,teacher=$("f-teacher").value.trim(),activity=+$("f-activity").value,date=$("f-date").value;
+  const errs=[];if(!school)errs.push("choose your school");if(!teacher)errs.push("enter your name");if(!activity)errs.push("choose the activity");if(!date)errs.push("set the date");
+  const boys=parseInt($("f-boys").value)||0,girls=parseInt($("f-girls").value)||0,understood=parseInt($("f-understood").value)||0;
+  if(understood>boys+girls)errs.push("learners who understood can't be more than learners present");
+  if(errs.length){$("ferr").hidden=false;$("ferr").textContent="Please "+errs.join(", ")+".";return}
+  $("ferr").hidden=true;
+  const rec={id:"r"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),school,teacher,activity,date,status:segVal("f-status")||"done",
+    boys,girls,understood,engagement:num(segVal("f-engage")),soilCover:num($("f-cover").value),worms:num($("f-worms").value),compostKg:num($("f-compost").value),
+    infiltrationSec:num($("f-infil").value),planted:num($("f-planted").value),alive:num($("f-alive").value),
+    m:readMeasures("m-",actOf(activity)),wentWell:$("f-well").value.trim(),challenges:$("f-chal").value.trim(),photos:pendingPhotos.slice(),photoIds:[],reviewed:false,savedAt:new Date().toISOString()};
+  outbox.push(rec);
+  if(!store.set("scm.outbox",outbox)){rec.photos=[];store.set("scm.outbox",outbox);toast("Phone storage is full, so photos were left out")}
+  store.set("scm.teacher",teacher);store.set("scm.school",school);
+  ["f-boys","f-girls","f-understood"].forEach(id=>$(id).value=0);
+  ["f-cover","f-worms","f-compost","f-infil","f-planted","f-alive","f-well","f-chal"].forEach(id=>$(id).value="");
+  $("f-photos").value="";pendingPhotos=[];$("photo-prev").innerHTML="";$("f-activity").value="";actChip();
+  $("f-engage").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false"));
+  toast("Saved on this phone");renderOutbox();sync();window.scrollTo({top:0,behavior:"smooth"});
+});
+function renderMine(){
+  const mine=myId?reports.filter(r=>r.by===myId).sort((a,b)=>a.date<b.date?1:-1).slice(0,10):[];
+  $("mine-wrap").hidden=!mine.length;
+  $("mine").innerHTML=mine.map(r=>`<div class="rep"><div class="row" style="justify-content:space-between"><b style="font-size:.92rem">${r.activity}. ${esc(actOf(r.activity).title)}</b>${r.reviewed?'<span class="chip ok">Reviewed</span>':'<span class="chip">Sent</span>'}</div>
+    <span class="meta">${esc(r.date)} · ${esc(r.school)} · ${r.boys||0} boys, ${r.girls||0} girls</span>${r.adminNote?`<p class="an"><b>Coordinator:</b> ${esc(r.adminNote)}</p>`:""}</div>`).join("");
+}
+
+/* ---------- outbox + sync ---------- */
+function saveOutbox(){store.set("scm.outbox",outbox)}
+function setSync(){
+  const s=$("sync");
+  if(outbox.length){s.className="sync pending";s.textContent=outbox.length+" waiting to send"}
+  else if(!db){s.className="sync off";s.textContent="Not connected"}
+  else{s.className="sync";s.textContent="All reports sent"}
+}
+function renderOutbox(){
+  setSync();
+  const el=$("outbox");
+  if(!outbox.length){el.innerHTML="";return}
+  const err=outbox.find(o=>o.error);
+  el.innerHTML=`<div class="note warn stack" style="gap:8px"><div><b>${outbox.length} report${outbox.length>1?"s":""} saved on this phone, not sent yet.</b><br>${navigator.onLine?"They will send automatically.":"You look offline. They will send when you have data."}${err?"<br>"+esc(err.error):""}</div>
+  <div class="row">${outbox.map(o=>`<span class="chip">${esc(o.school)} · Act ${o.activity}</span>`).join("")}<button class="btn small" id="sendnow" type="button" ${syncing?"disabled":""}>${syncing?"Sending…":"Send now"}</button></div></div>`;
+  const b=$("sendnow");if(b)b.onclick=()=>sync(true);
+}
+function b64Blob(dataUrl){const b=dataUrl.split(",")[1];const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:"image/jpeg"})}
+const withTimeout=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej({code:"timeout"}),ms))]);
+async function sync(manual){
+  if(syncing||!outbox.length)return;
+  if(!db){if(manual)toast("Not connected yet. Check your data and reopen the page.");return}
+  syncing=true;renderOutbox();
+  for(const item of outbox.slice()){
+    try{
+      while(item.photos&&item.photos.length){
+        if(!assets){item.photos=[];break}
+        try{const r=await withTimeout(assets.upload(b64Blob(item.photos[0]),{type:"image/jpeg"}),60000);item.photoIds.push(r.id)}
+        catch(pe){if(pe&&(pe.code==="too_large"||pe.code==="unsupported_type"||pe.code==="invalid_request")){}else throw pe}
+        item.photos.shift();saveOutbox();
+      }
+      const {photos,error,...rec}=item;rec.sentAt=new Date().toISOString();if(myId)rec.by=myId;
+      await withTimeout(db.collection("reports").doc(item.id).set(rec),30000);
+      outbox=outbox.filter(o=>o.id!==item.id);saveOutbox();
+    }catch(e){
+      if(e&&e.code==="invalid_argument"){item.error="This phone isn't signed in. Open the link the coordinator sent you again, then tap Send now.";saveOutbox()}
+      if(manual)toast("Couldn't send. Try again when the signal is better.");
+      break;
+    }
+  }
+  syncing=false;renderOutbox();
+  if(!outbox.length&&manual)toast("All reports sent");
+}
+window.addEventListener("online",()=>{renderOutbox();sync()});
+window.addEventListener("offline",renderOutbox);
+setInterval(()=>{if(navigator.onLine&&outbox.length)sync()},60000);
+
+/* ---------- shared statistics ---------- */
+function stats(rs,sch,m1,m2){
+  const acts=config.activities.map((a,i)=>({...a,n:i+1})).filter(a=>a.month>=m1&&a.month<=m2);
+  const actSet=new Set(acts.map(a=>a.n));
+  const inP=rs.filter(r=>actSet.has(r.activity)&&sch.includes(r.school));
+  const held=inP.filter(r=>r.status!=="postponed");
+  const done=new Set(held.map(r=>r.school+"|"+r.activity));
+  const sum=(l,k)=>l.reduce((t,r)=>t+(+r[k]||0),0);
+  const eng=l=>{const e=l.filter(r=>r.engagement);return e.length?(sum(e,"engagement")/e.length).toFixed(1):null};
+  const metric=(l,k)=>{const v=l.filter(r=>r[k]!=null&&r[k]!=="").sort((a,b)=>a.date<b.date?-1:1);return v.length?{first:v[0][k],last:v[v.length-1][k],n:v.length}:null};
+  const schools=sch.map(s=>{
+    const l=held.filter(r=>r.school===s),all=inP.filter(r=>r.school===s);
+    const b=sum(l,"boys"),g=sum(l,"girls"),u=sum(l,"understood");
+    const delivered=acts.filter(a=>done.has(s+"|"+a.n));
+    const overdue=acts.filter(a=>isOverdue(a)&&!done.has(s+"|"+a.n));
+    const sv=l.filter(r=>r.planted&&r.alive!=null).sort((x,y)=>x.date<y.date?-1:1).pop();
+    return {name:s,reports:all.length,patrons:[...new Set(all.map(r=>r.teacher).filter(Boolean))],delivered:delivered.length,planned:acts.length,overdue,
+      boys:b,girls:g,att:b+g,und:u,understandPct:pct(u,b+g),girlsPct:pct(g,b+g),eng:eng(l),
+      cover:metric(l,"soilCover"),worms:metric(l,"worms"),infil:metric(l,"infiltrationSec"),compost:sum(l,"compostKg"),survival:sv?pct(sv.alive,sv.planted):null,
+      wins:l.filter(r=>r.wentWell).sort((x,y)=>x.date<y.date?1:-1).slice(0,2),chals:all.filter(r=>r.challenges).sort((x,y)=>x.date<y.date?1:-1)};
+  });
+  const principles=config.principles.map((p,pi)=>{
+    const l=held.filter(r=>actOf(r.activity).principle===pi);const a=sum(l,"boys")+sum(l,"girls"),u=sum(l,"understood");
+    return {...p,sessions:new Set(l.map(r=>r.school+"|"+r.activity)).size,planned:acts.filter(x=>x.principle===pi).length*sch.length,understandPct:pct(u,a)};
+  });
+  const b=sum(held,"boys"),g=sum(held,"girls"),u=sum(held,"understood");
+  return {acts,inP,held,done,schools,principles,boys:b,girls:g,att:b+g,und:u,understandPct:pct(u,b+g),girlsPct:pct(g,b+g),eng:eng(held),planned:acts.length*sch.length,
+    compost:sum(held,"compostKg")};
+}
+function resultsRows(S,sch,doc){
+  let rows="";
+  S.acts.forEach(a=>{(a.measures||[]).forEach((m,mi)=>{
+    const vals=sch.map(s=>{const l=S.held.filter(r=>r.school===s&&r.activity===a.n&&r.m&&r.m[m.k]!=null).sort((x,y)=>x.date<y.date?-1:1);return l.length?l[l.length-1].m[m.k]:null});
+    if(vals.every(v=>v==null))return;
+    rows+=`<tr><td>${a.n}. ${esc(m.label)}</td><td${doc?"":' style="text-align:left"'}>${esc(m.unit)}</td>${vals.map(v=>`<td${doc?' class="n"':""}>${v==null?"–":v}</td>`).join("")}</tr>`;
+  })});
+  return rows?`<tr><th>Activity measurement</th><th${doc?"":' style="text-align:left"'}>Unit</th>${sch.map(s=>`<th>${esc(s)}</th>`).join("")}</tr>`+rows:"";
+}
+const fmtM=(m,suf="")=>m?(m.n>1?`${m.first}${suf} → ${m.last}${suf}`:`${m.last}${suf}`):"–";
+
+/* ---------- dashboard ---------- */
+$("d-school").addEventListener("change",renderDash);
+$("d-gen").addEventListener("click",()=>go("summary"));
+function renderDash(){
+  if(current!=="dashboard")return;
+  const sch=$("d-school").value?[$("d-school").value]:config.schools;
+  const S=stats(reports,sch,1,7);
+  $("kpis").innerHTML=[
+    [S.done.size+(S.planned?" / "+S.planned:""),"activity sessions delivered"],
+    [S.inP.length,"reports received"],
+    [S.att,"learner attendances"],
+    [S.girlsPct==null?"–":S.girlsPct+"%","of attendances are girls"],
+    [S.understandPct==null?"–":S.understandPct+"%","could explain the principle"],
+    [S.eng||"–","average engagement (of 5)"]
+  ].map(([v,l])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  const statusMap={};S.inP.forEach(r=>{const k=r.school+"|"+r.activity;const rank={done:3,partly:2,postponed:1}[r.status]||0;if(!statusMap[k]||rank>statusMap[k])statusMap[k]=rank});
+  if(!sch.length){$("cov").innerHTML='<tr><td class="empty" style="width:auto;height:auto;border:0">Add schools in Setup to see coverage.</td></tr>'}
+  else{
+    $("cov").innerHTML="<tr><th></th>"+config.activities.map((a,i)=>`<th title="${esc(a.title)}">${i+1}</th>`).join("")+"</tr>"+
+    sch.map(s=>"<tr><th class='sch' title='"+esc(s)+"'>"+esc(s)+"</th>"+config.activities.map((a,i)=>{
+      const st=statusMap[s+"|"+(i+1)]||0,p=config.principles[a.principle]||{},col=BRICKS[p.brick]||"var(--sunk)";
+      const tip=`${s} · ${i+1}. ${a.title} · ${st===3?"done":st===2?"partly done":st===1?"postponed":isOverdue(a)?"overdue":"not yet due"}`;
+      const pp=a.principle===6?SYNTH:p,cc=BRICKS[pp.brick]||"var(--sunk)";
+      if(st>=2)return `<td class="${st===2?"part":""}" style="background:${cc};border-color:${edgeCol(cc)}" title="${esc(tip)}"></td>`;
+      if(isOverdue(a))return `<td class="late" title="${esc(tip)}">!</td>`;
+      return `<td title="${esc(tip)}" style="border-color:${edgeCol(cc)};opacity:.55"></td>`;
+    }).join("")+"</tr>").join("");
+  }
+  $("cov-legend").innerHTML=[...config.principles,SYNTH].map(p=>`<span class="row" style="gap:5px"><span class="dot" style="background:${BRICKS[p.brick]}"></span>${esc(p.name)}</span>`).join("")+'<span>◩ partly done</span>';
+  $("by-principle").innerHTML=S.principles.map(p=>`<div class="bar"><span class="nm" title="${esc(p.name)}">${esc(p.name)}</span><div class="track"><div class="fill" style="width:${p.understandPct||0}%;background:${BRICKS[p.brick]}"></div></div><span class="v">${p.understandPct==null?"–":p.understandPct+"%"}</span></div>`).join("");
+  const mb=Array(7).fill(0),mg=Array(7).fill(0);
+  S.held.forEach(r=>{const m=monthOfDate(r.date)-1;if(m>=0&&m<7){mb[m]+=r.boys||0;mg[m]+=r.girls||0}});
+  const mx=Math.max(1,...mb.map((b,i)=>b+mg[i]));
+  $("months").innerHTML=mb.map((b,i)=>{const t=b+mg[i];return `<div class="mcol" title="${MONTHS[i]}: ${b} boys, ${mg[i]} girls">${t?`<span class="tot" style="bottom:calc(${t/mx*100}% + 2px)">${t}</span>`:""}<div class="seg-g" style="height:${mg[i]/mx*100}%"></div><div class="seg-b" style="height:${b/mx*100}%;${mg[i]?"":"border-radius:4px 4px 0 0"}"></div></div>`}).join("");
+  $("field").innerHTML=sch.length?"<tr><th>School</th><th>Soil cover</th><th>Worms / spade</th><th>Soak-in time</th><th>Compost made</th><th>Seedling survival</th></tr>"+S.schools.map(s=>
+    `<tr><td>${esc(s.name)}</td><td>${fmtM(s.cover,"%")}</td><td>${fmtM(s.worms)}</td><td>${fmtM(s.infil,"s")}</td><td>${s.compost?s.compost+" kg":"–"}</td><td>${s.survival==null?"–":s.survival+"%"}</td></tr>`).join(""):'<tr><td class="hint">No schools yet.</td></tr>';
+  $("results").innerHTML=resultsRows(S,sch,false)||'<tr><td class="hint">No activity results recorded yet.</td></tr>';
+  const ch=S.inP.filter(r=>r.challenges).sort((a,b)=>a.date<b.date?1:-1).slice(0,8);
+  $("chals").innerHTML=ch.length?ch.map(r=>`<div class="rep"><span class="meta">${esc(r.date)} · ${esc(r.school)} · ${esc(r.teacher)}</span><p>${esc(r.challenges)}</p></div>`).join(""):'<div class="empty">No challenges reported.</div>';
+}
+
+/* ---------- submissions (back end) ---------- */
+["x-school","x-patron","x-activity","x-review"].forEach(id=>$(id).addEventListener("change",renderSubs));
+function renderSubs(){
+  if(current!=="submissions")return;
+  // patron table
+  const byP={};reports.forEach(r=>{const k=(r.teacher||"Unknown")+"|"+r.school;(byP[k]=byP[k]||[]).push(r)});
+  const rows=Object.entries(byP).sort((a,b)=>a[0]<b[0]?-1:1);
+  $("patrons").innerHTML=rows.length?"<tr><th>Patron</th><th>School</th><th>Reports</th><th>Last report</th><th>Needs review</th></tr>"+rows.map(([k,l])=>{const[t,s]=k.split("|");const last=l.map(r=>r.date).sort().pop();const todo=l.filter(r=>!r.reviewed).length;
+    return `<tr><td>${esc(t)}</td><td style="text-align:left">${esc(s)}</td><td>${l.length}</td><td>${esc(last)}</td><td>${todo?`<span class="chip todo">${todo}</span>`:"0"}</td></tr>`}).join(""):'<tr><td class="hint">No patron has sent a report yet.</td></tr>';
+  const pv=$("x-patron").value;
+  $("x-patron").innerHTML='<option value="">All patrons</option>'+[...new Set(reports.map(r=>r.teacher).filter(Boolean))].sort().map(t=>`<option ${t===pv?"selected":""}>${esc(t)}</option>`).join("");
+  const fs=$("x-school").value,fp=$("x-patron").value,fa=$("x-activity").value,fr=$("x-review").value;
+  const list=reports.filter(r=>(!fs||r.school===fs)&&(!fp||r.teacher===fp)&&(!fa||String(r.activity)===fa)&&(!fr||(fr==="ok")===!!r.reviewed))
+    .sort((a,b)=>(a.date+(a.sentAt||""))<(b.date+(b.sentAt||""))?1:-1);
+  $("x-count").textContent=list.length+" of "+reports.length+" reports";
+  $("subs").innerHTML=list.length?list.map(r=>r.id===editingId?editorHtml(r):cardHtml(r)).join(""):'<div class="empty">No reports match. Reports appear here as soon as a patron sends one.</div>';
+}
+function cardHtml(r){
+  const a=actOf(r.activity),p=prOf(r.activity);
+  const f=[r.soilCover!=null&&`cover ${r.soilCover}%`,r.worms!=null&&`${r.worms} worms`,r.infiltrationSec!=null&&`soak-in ${r.infiltrationSec}s`,r.compostKg!=null&&`${r.compostKg} kg compost`,r.planted!=null&&`${r.alive??"?"}/${r.planted} seedlings alive`].filter(Boolean).join(" · ");
+  return `<div class="rep"><div class="row" style="justify-content:space-between"><span class="chip"><span class="dot" style="background:${BRICKS[p.brick]||"var(--sunk)"}"></span>${r.activity}. ${esc(a.title)}</span><span class="row" style="gap:6px"><span class="chip">${esc(r.status)}</span>${r.reviewed?'<span class="chip ok">Reviewed</span>':'<span class="chip todo">Needs review</span>'}</span></div>
+  <span class="meta">${esc(r.date)} · ${esc(r.school)} · ${esc(r.teacher)} · ${r.boys||0} boys, ${r.girls||0} girls · ${r.understood||0} understood${r.engagement?` · engagement ${r.engagement}/5`:""}</span>
+  ${f?`<span class="meta">${esc(f)}</span>`:""}
+  ${measText(r)?`<span class="meta"><b>Results:</b> ${esc(measText(r))}</span>`:""}
+  ${r.wentWell?`<p><b>Went well:</b> ${esc(r.wentWell)}</p>`:""}${r.challenges?`<p><b>Challenges:</b> ${esc(r.challenges)}</p>`:""}
+  ${(r.photoIds||[]).length?`<div class="photos">${r.photoIds.map(id=>`<img loading="lazy" src="/api/photo?p=${encodeURIComponent(id)}" alt="Club photo from ${esc(r.school)}" onerror="this.style.visibility='hidden'">`).join("")}</div>`:""}
+  ${r.adminNote?`<p class="an"><b>Your note:</b> ${esc(r.adminNote)}</p>`:""}
+  ${r.editedAt?`<span class="meta">Edited by coordinator ${esc(r.editedAt.slice(0,10))}</span>`:""}
+  <div class="row"><button class="btn small" data-edit="${esc(r.id)}" type="button">Edit</button>${r.reviewed?"":`<button class="btn small ghost" data-ok="${esc(r.id)}" type="button">Mark reviewed</button>`}<button class="btn small danger" data-del="${esc(r.id)}" type="button">Delete</button></div></div>`;
+}
+const EF=[["teacher","Patron teacher","text"],["date","Date","date"],["boys","Boys","num"],["girls","Girls","num"],["understood","Learners who understood","num"],["engagement","Engagement (1–5)","num"],
+  ["soilCover","Soil cover %","num"],["worms","Earthworms / spade","num"],["infiltrationSec","Soak-in time (sec)","num"],["compostKg","Compost made (kg)","num"],["planted","Seedlings planted","num"],["alive","Seedlings alive","num"]];
+function editorHtml(r){
+  return `<div class="rep editing stack"><h3 style="margin:0">Edit report · ${esc(r.school)}</h3>
+  <div class="grid3">
+    <div class="field"><label for="e-school">School</label><select id="e-school">${[...new Set([...config.schools,r.school])].map(s=>`<option ${s===r.school?"selected":""}>${esc(s)}</option>`).join("")}</select></div>
+    <div class="field"><label for="e-activity">Activity</label><select id="e-activity">${config.activities.map((a,i)=>`<option value="${i+1}" ${i+1===r.activity?"selected":""}>${i+1}. ${esc(a.title)}</option>`).join("")}</select></div>
+    <div class="field"><label for="e-status">Status</label><select id="e-status">${["done","partly","postponed"].map(s=>`<option ${s===r.status?"selected":""}>${s}</option>`).join("")}</select></div>
+    ${EF.map(([k,l,t])=>`<div class="field"><label for="e-${k}">${l}</label><input id="e-${k}" type="${t==="num"?"number":t}" ${t==="num"?'inputmode="decimal" min="0"':""} value="${esc(r[k]??"")}"></div>`).join("")}
+  </div>
+  ${(actOf(r.activity).measures||[]).length?`<div class="grid3">${actOf(r.activity).measures.map(m=>`<div class="field"><label for="em-${m.k}">${esc(m.label)} (${esc(m.unit)})</label><input id="em-${m.k}" type="number" inputmode="decimal" step="any" value="${esc(r.m&&r.m[m.k]!=null?r.m[m.k]:"")}"></div>`).join("")}</div>`:""}
+  <div class="field"><label for="e-wentWell">What went well</label><textarea id="e-wentWell">${esc(r.wentWell||"")}</textarea></div>
+  <div class="field"><label for="e-challenges">Challenges</label><textarea id="e-challenges">${esc(r.challenges||"")}</textarea></div>
+  ${(r.photoIds||[]).length?`<div class="field"><span class="lab">Photos</span><div class="photos">${r.photoIds.map(id=>`<label class="ph"><img src="/api/photo?p=${encodeURIComponent(id)}" alt="Report photo"><span class="row" style="gap:4px;font-weight:400;font-size:.8rem"><input type="checkbox" data-keep="${esc(id)}" checked> keep</span></label>`).join("")}</div></div>`:""}
+  <div class="field"><label for="e-adminNote">Note for the patron (they see it under their sent reports)</label><textarea id="e-adminNote" placeholder="e.g. Thanks! Please add the boys/girls split next time.">${esc(r.adminNote||"")}</textarea></div>
+  <label class="row" style="gap:8px"><input type="checkbox" id="e-reviewed" ${r.reviewed||!r.editedAt?"checked":""}> Mark as reviewed</label>
+  <div id="e-err" class="note warn" hidden></div>
+  <div class="row"><button class="btn" data-save="${esc(r.id)}" type="button">Save changes</button><button class="btn ghost" data-cancel="1" type="button">Cancel</button></div></div>`;
+}
+$("subs").addEventListener("click",async e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.edit){editingId=t.dataset.edit;renderSubs();return}
+  if(t.dataset.cancel){editingId=null;renderSubs();return}
+  if(!db){toast("Not connected");return}
+  const ref=id=>db.collection("reports").doc(id);
+  if(t.dataset.ok){try{await ref(t.dataset.ok).update({reviewed:true,reviewedAt:new Date().toISOString()});toast("Marked reviewed")}catch(err){toast("Couldn't update that report")}return}
+  if(t.dataset.del){
+    if(t.dataset.confirm!=="1"){t.dataset.confirm="1";t.textContent="Tap again to delete";setTimeout(()=>{t.dataset.confirm="";t.textContent="Delete"},4000);return}
+    try{await ref(t.dataset.del).delete();toast("Report deleted")}catch(err){toast("Couldn't delete that report")}return}
+  if(t.dataset.save){
+    const r=reports.find(x=>x.id===t.dataset.save);if(!r)return;
+    const upd={school:$("e-school").value,activity:+$("e-activity").value,status:$("e-status").value,wentWell:$("e-wentWell").value.trim(),challenges:$("e-challenges").value.trim(),adminNote:$("e-adminNote").value.trim(),reviewed:$("e-reviewed").checked};
+    EF.forEach(([k,,ty])=>{const v=$("e-"+k).value;upd[k]=ty==="num"?num(v):v.trim()});
+    if(upd.activity===r.activity)upd.m=readMeasures("em-",actOf(r.activity));
+    ["boys","girls","understood"].forEach(k=>upd[k]=upd[k]||0);
+    const errs=[];if(!upd.teacher)errs.push("Patron name is empty.");if(!upd.date)errs.push("Date is empty.");
+    if(upd.understood>upd.boys+upd.girls)errs.push("Learners who understood is more than learners present.");
+    if(upd.engagement!=null&&(upd.engagement<1||upd.engagement>5))errs.push("Engagement must be 1 to 5.");
+    if(upd.soilCover!=null&&upd.soilCover>100)errs.push("Soil cover can't be over 100%.");
+    if(errs.length){$("e-err").hidden=false;$("e-err").textContent=errs.join(" ");return}
+    const keep=[...document.querySelectorAll("[data-keep]")];if(keep.length)upd.photoIds=keep.filter(c=>c.checked).map(c=>c.dataset.keep);
+    const changed=Object.keys(upd).filter(k=>JSON.stringify(upd[k]??null)!==JSON.stringify(r[k]??null));
+    upd.editedAt=new Date().toISOString();
+    upd.editLog=[...(r.editLog||[]),{at:upd.editedAt,fields:changed}].slice(-10);
+    t.disabled=true;
+    try{await ref(r.id).update(upd);editingId=null;toast(changed.length?"Report updated":"Saved");renderSubs()}
+    catch(err){t.disabled=false;$("e-err").hidden=false;$("e-err").textContent="Couldn't save. Check your connection and try again."}
+  }
+});
+$("csv").addEventListener("click",async()=>{
+  if(!downloads)return;
+  const cols=["date","school","teacher","activity","activityTitle","principle","status","boys","girls","understood","engagement","soilCover","worms","infiltrationSec","compostKg","planted","alive","wentWell","challenges","photos","results","reviewed","adminNote"];
+  const q=v=>{const s=v==null?"":String(v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+  const rows=reports.slice().sort((a,b)=>a.date<b.date?-1:1).map(r=>cols.map(c=>q(c==="activityTitle"?actOf(r.activity).title:c==="principle"?prOf(r.activity).name:c==="photos"?(r.photoIds||[]).length:c==="results"?measText(r):r[c])).join(","));
+  try{await downloads.save({filename:"soil-club-reports.csv",data:[cols.join(","),...rows].join("\n")})}catch(e){}
+});
+
+/* ---------- programme report ---------- */
+["g-from","g-to","g-reviewed"].forEach(id=>$(id).addEventListener("change",renderSummary));
+$("g-notes").addEventListener("input",()=>{$("g-msg").textContent="Unsaved";renderSummaryDebounced()});
+let _rs;function renderSummaryDebounced(){clearTimeout(_rs);_rs=setTimeout(renderSummary,400)}
+$("g-savenotes").addEventListener("click",async()=>{
+  if(!db)return;reportNotes={text:$("g-notes").value,updatedAt:new Date().toISOString()};
+  try{await db.doc("config/reportnotes").set(reportNotes);$("g-msg").textContent="Notes saved"}catch(e){$("g-msg").textContent="Couldn't save notes"}
+});
+function buildReport(){
+  let m1=+$("g-from").value||1,m2=+$("g-to").value||7;if(m1>m2)[m1,m2]=[m2,m1];
+  const rs=$("g-reviewed").checked?reports.filter(r=>r.reviewed):reports;
+  const sch=config.schools,S=stats(rs,sch,m1,m2),yr=config.year;
+  const period=m1===m2?`${MONTHS_L[m1-1]} ${yr}`:`${MONTHS_L[m1-1]} – ${MONTHS_L[m2-1]} ${yr}`;
+  const today=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+  const P=v=>v==null?"–":v+"%";
+  if(!sch.length)return `<h1>Regenerative Agriculture Club</h1><p class="muted">Add schools in Setup to generate the report.</p>`;
+  const ranked=S.principles.filter(p=>p.understandPct!=null).sort((a,b)=>b.understandPct-a.understandPct);
+  let narr=`Between ${MONTHS_L[m1-1]} and ${MONTHS_L[m2-1]} ${yr}, the club ran in ${sch.length} school${sch.length>1?"s":""}. Patron teachers sent ${S.inP.length} report${S.inP.length===1?"":"s"}, and ${S.done.size} of ${S.planned} planned activity sessions (${P(pct(S.done.size,S.planned))}) were delivered.`;
+  if(S.att)narr+=` Learners attended ${S.att} times (${S.boys} boys, ${S.girls} girls; ${P(S.girlsPct)} girls). On average ${P(S.understandPct)} of learners present could explain the soil health principle of the session${S.eng?`, and engagement averaged ${S.eng} out of 5`:""}.`;
+  if(ranked.length>1)narr+=` Understanding was strongest for <b>${esc(ranked[0].name)}</b> (${ranked[0].understandPct}%) and weakest for <b>${esc(ranked[ranked.length-1].name)}</b> (${ranked[ranked.length-1].understandPct}%).`;
+  if(S.compost)narr+=` Clubs made ${S.compost} kg of compost.`;
+  const follow=S.schools.filter(s=>s.overdue.length);
+  const notes=$("g-notes").value.trim();
+  return `<h1>Regenerative Agriculture Club: Programme Report</h1>
+  <p class="muted">Regeneration Station · Period: ${esc(period)} · Generated ${esc(today)}${$("g-reviewed").checked?" · Reviewed reports only":""}</p>
+  <h2>1. Summary</h2><p>${narr}</p>
+  <table class="kv"><tr><td class="big">${S.done.size}/${S.planned}</td><td>activity sessions delivered</td><td class="big">${S.att}</td><td>learner attendances</td></tr>
+  <tr><td class="big">${P(S.girlsPct)}</td><td>of attendances were girls</td><td class="big">${P(S.understandPct)}</td><td>of learners could explain the principle</td></tr></table>
+  <h2>2. Delivery and participation by school</h2>
+  <table><tr><th>School</th><th>Patron teacher(s)</th><th>Sessions delivered</th><th>Overdue</th><th>Boys</th><th>Girls</th><th>Girls %</th><th>Understood</th><th>Engagement</th></tr>
+  ${S.schools.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.patrons.join(", ")||"–")}</td><td class="n">${s.delivered} / ${s.planned}</td><td class="n">${s.overdue.length}</td><td class="n">${s.boys}</td><td class="n">${s.girls}</td><td class="n">${P(s.girlsPct)}</td><td class="n">${P(s.understandPct)}</td><td class="n">${s.eng||"–"}</td></tr>`).join("")}
+  <tr><th>All schools</th><th></th><th class="n">${S.done.size} / ${S.planned}</th><th class="n">${follow.reduce((t,s)=>t+s.overdue.length,0)}</th><th class="n">${S.boys}</th><th class="n">${S.girls}</th><th class="n">${P(S.girlsPct)}</th><th class="n">${P(S.understandPct)}</th><th class="n">${S.eng||"–"}</th></tr></table>
+  <h2>3. Learning by soil health principle</h2>
+  <table><tr><th>Principle</th><th>Brick colour</th><th>Sessions delivered</th><th>Learners who could explain it</th></tr>
+  ${S.principles.map(p=>`<tr><td>${esc(p.name)}</td><td><span class="sw" style="background:${BRICKS[p.brick]}"></span>${esc(BRICK_NAMES[p.brick])}</td><td class="n">${p.sessions} / ${p.planned}</td><td class="n">${P(p.understandPct)}</td></tr>`).join("")}</table>
+  <h2>4. Soil and garden results</h2><p class="muted">First measurement → latest measurement in the period.</p>
+  <table><tr><th>School</th><th>Soil cover</th><th>Earthworms / spade</th><th>Water soak-in time</th><th>Compost made</th><th>Seedling survival</th></tr>
+  ${S.schools.map(s=>`<tr><td>${esc(s.name)}</td><td class="n">${fmtM(s.cover,"%")}</td><td class="n">${fmtM(s.worms)}</td><td class="n">${fmtM(s.infil," s")}</td><td class="n">${s.compost?s.compost+" kg":"–"}</td><td class="n">${P(s.survival)}</td></tr>`).join("")}</table>
+  <h2>5. Activity results</h2><p class="muted">Measurements from the booklet activities. Latest value reported by each school.</p>
+  ${resultsRows(S,sch,true)?`<table>${resultsRows(S,sch,true)}</table>`:`<p class="muted">No activity results recorded for this period.</p>`}
+  <h2>6. What went well</h2>
+  ${S.schools.some(s=>s.wins.length)?`<ul>${S.schools.flatMap(s=>s.wins.map(r=>`<li><b>${esc(s.name)}</b> (${esc(actOf(r.activity).title)}): ${esc(r.wentWell)}</li>`)).join("")}</ul>`:`<p class="muted">No highlights reported for this period.</p>`}
+  <h2>7. Challenges raised by patron teachers</h2>
+  ${S.schools.some(s=>s.chals.length)?`<ul>${S.schools.flatMap(s=>s.chals.map(r=>`<li><b>${esc(s.name)}</b>, ${esc(r.date)}: ${esc(r.challenges)}</li>`)).join("")}</ul>`:`<p class="muted">No challenges reported for this period.</p>`}
+  <h2>8. Follow-up needed</h2>
+  ${follow.length?`<ul>${follow.map(s=>`<li><b>${esc(s.name)}</b>: ${s.overdue.length} overdue activit${s.overdue.length>1?"ies":"y"} (${s.overdue.map(a=>a.n+". "+esc(a.title)).join("; ")})</li>`).join("")}</ul>`:`<p>All activities due by today have been reported.</p>`}
+  ${notes?`<h2>9. Coordinator's notes and recommendations</h2><p>${esc(notes).replace(/\n/g,"<br>")}</p>`:""}`;
+}
+function renderSummary(){if(current==="summary")$("doc").innerHTML=buildReport()}
+async function downloadReport(kind){
+  if(!downloads)return;
+  const css=$("report-css").textContent;const body=buildReport();
+  const head=`<meta charset="utf-8"><title>Regenerative Agriculture Club Programme Report</title><style>body{margin:0;background:#f3efe6}${css}</style>`;
+  const html=kind==="word"
+    ?`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head>${head}</head><body><div class="doc">${body}</div></body></html>`
+    :`<!doctype html><html><head>${head}</head><body><div class="doc">${body}</div></body></html>`;
+  const name="soil-club-programme-report-"+new Date().toISOString().slice(0,10)+(kind==="word"?".doc":".html");
+  try{await downloads.save({filename:name,data:new Blob(["﻿"+html],{type:kind==="word"?"application/msword":"text/html"})})}catch(e){}
+}
+$("g-word").addEventListener("click",()=>downloadReport("word"));
+$("g-html").addEventListener("click",()=>downloadReport("html"));
+
+/* ---------- setup ---------- */
+function renderSetup(){
+  $("s-year").value=config.year;
+  $("s-schools").innerHTML=config.schools.length?config.schools.map((s,i)=>`<span class="chip">${esc(s)}<button type="button" data-rm="${i}" aria-label="Remove ${esc(s)}">×</button></span>`).join(""):'<span class="hint">No schools added yet.</span>';
+  const J=window.__PC?"?join="+encodeURIComponent(window.__PC):"";const links=[["Any school",ARTIFACT_URL+J+"#patron"],...config.schools.map((s,i)=>[s,ARTIFACT_URL+J+"#patron-"+(i+1)])];
+  $("s-links").innerHTML=links.map(([l,u],i)=>`<div class="linkrow"><span style="font-weight:700;font-size:.9rem">${esc(l)}</span><input id="lnk-${i}" readonly value="${esc(u)}" aria-label="Link for ${esc(l)}"><button class="btn small" type="button" data-copy="lnk-${i}">Copy</button></div>`).join("")+
+    (config.schools.length?'<p class="hint">School links follow the order of the schools above, so if you remove a school, send the patrons new links.</p>':"");
+  $("s-principles").innerHTML=config.principles.map((p,i)=>`<div class="prow"><span class="dot" style="background:${BRICKS[p.brick]};width:20px;height:20px"></span><input id="sp-name-${i}" value="${esc(p.name)}" aria-label="Principle ${i+1} name"><select id="sp-brick-${i}" aria-label="Principle ${i+1} brick colour">${PICK_BRICKS.map(k=>`<option value="${k}" ${k===p.brick?"selected":""}>${BRICK_NAMES[k]}</option>`).join("")}</select></div>`).join("");
+  $("s-acts").innerHTML=config.activities.map((a,i)=>`<div class="actrow"><b>${i+1}</b><input id="sa-title-${i}" value="${esc(a.title)}" aria-label="Activity ${i+1} title"><select id="sa-pr-${i}" aria-label="Activity ${i+1} principle">${config.principles.map((p,pi)=>`<option value="${pi}" ${pi===a.principle?"selected":""}>${esc(p.name)}</option>`).join("")}<option value="6" ${a.principle===6?"selected":""}>All six (synthesis)</option></select><select id="sa-m-${i}" aria-label="Activity ${i+1} month">${MONTHS.map((m,mi)=>`<option value="${mi+1}" ${mi+1===a.month?"selected":""}>${m}</option>`).join("")}</select></div>`).join("");
+}
+$("s-links").addEventListener("click",e=>{
+  const b=e.target.closest("[data-copy]");if(!b)return;const inp=$(b.dataset.copy);
+  const done=()=>{b.textContent="Copied";setTimeout(()=>b.textContent="Copy",2000)};
+  const fallback=()=>{inp.focus();inp.select();toast("Link selected: copy it from your keyboard menu")};
+  try{navigator.clipboard.writeText(inp.value).then(done,fallback)}catch(err){fallback()}
+});
+function readSetup(){
+  config.year=parseInt($("s-year").value)||config.year;
+  config.principles=config.principles.map((p,i)=>({name:$("sp-name-"+i).value.trim()||p.name,brick:$("sp-brick-"+i).value}));
+  config.activities=config.activities.map((a,i)=>({...a,title:$("sa-title-"+i).value.trim()||("Activity "+(i+1)),principle:+$("sa-pr-"+i).value,month:+$("sa-m-"+i).value}));
+}
+$("s-principles").addEventListener("change",e=>{if(e.target.id.startsWith("sp-brick")){readSetup();renderSetup()}});
+$("s-schools").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;readSetup();config.schools.splice(+b.dataset.rm,1);renderSetup();$("s-msg").textContent="Unsaved changes"});
+function addSchool(){const v=$("s-newschool").value.trim();if(!v)return;readSetup();if(!config.schools.includes(v))config.schools.push(v);$("s-newschool").value="";renderSetup();$("s-msg").textContent="Unsaved changes"}
+$("s-add").addEventListener("click",addSchool);
+$("s-newschool").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addSchool()}});
+$("s-save").addEventListener("click",async()=>{
+  readSetup();
+  if(!db){$("s-msg").textContent="Not connected, so setup can't be saved yet.";return}
+  $("s-save").disabled=true;$("s-msg").textContent="Saving…";
+  try{await db.doc("config/main").set(JSON.parse(JSON.stringify(config)));$("s-msg").textContent="Saved. Patrons see the changes next time they open their link.";fillOptions()}
+  catch(e){$("s-msg").textContent="Couldn't save. Check your connection and try again."}
+  $("s-save").disabled=false;
+});
+
+/* ---------- boot ---------- */
+const cached=store.get("scm.config",null);if(cached&&cached.activities)config=cached;
+fillOptions();renderSetup();renderOutbox();show("form");
+
+(async()=>{
+  const use=window.claude&&window.claude.use?n=>window.claude.use(n).catch(()=>null):async()=>null;
+  [db,user,downloads]=await Promise.all([use("db"),use("user"),use("downloads")]);
+  if(user){try{isOwner=await user.isOwner()}catch(e){}try{myId=await user.id()}catch(e){}}
+  if(downloads){$("csv").hidden=false;$("g-word").hidden=false;$("g-html").hidden=false;$("g-dlhint").hidden=false}
+  applyMode();setSync();renderSetup();
+  if(!db){renderOutbox();return}
+  db.doc("config/main").onSnapshot(snap=>{
+    if(snap.exists){config={...structuredClone(DEFAULT_CONFIG),...JSON.parse(JSON.stringify(snap.data()))};store.set("scm.config",config);fillOptions();renderSetup();applyHashSchool();renderCurrent()}
+  },()=>{});
+  db.collection("reports").onSnapshot(snap=>{
+    reports=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const todo=reports.filter(r=>!r.reviewed).length;$("n-review").hidden=!todo;$("n-review").textContent=todo;
+    if(editingId&&current==="submissions")return;
+    renderCurrent();
+  },()=>{});
+  db.doc("config/reportnotes").onSnapshot(snap=>{if(snap.exists&&document.activeElement!==$("g-notes")){reportNotes=snap.data();$("g-notes").value=reportNotes.text||"";renderSummary()}},()=>{});
+  use("assets").then(a=>{assets=a;sync()});
+  sync();
+})();
+function applyHashSchool(){const hs=hashSchool();if(hs&&!$("f-school").value)$("f-school").value=hs}
+})();
+</script>
+
+</body></html>
